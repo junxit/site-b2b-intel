@@ -37,6 +37,34 @@ DEFAULT_DKIM_SELECTORS: tuple[str, ...] = (
     "dkim",
 )
 
+#: Subdomains probed for CNAME records.
+#:
+#: A CNAME at one of these labels is the strongest DNS-only evidence that a
+#: hosted SaaS product sits behind it — `status.` delegating to
+#: `*.statuspage.io` is unambiguous in a way an apex TXT token is not.
+#:
+#: This costs one query per label, roughly doubling a scan (~19 to ~34
+#: queries, about 4s to 7s per domain at the default 5 qps). Pass
+#: `cname_probes=()` — or `b2b-intel scan --no-probe` — to skip it when
+#: batch-scanning at volume.
+DEFAULT_CNAME_PROBES: tuple[str, ...] = (
+    "www",
+    "shop",
+    "store",
+    "support",
+    "help",
+    "status",
+    "blog",
+    "careers",
+    "jobs",
+    "docs",
+    "pages",
+    "go",
+    "try",
+    "links",
+    "email",
+)
+
 
 class _TokenBucket:
     """Per-upstream queue-time rate limiter (sliding 1s window)."""
@@ -69,6 +97,8 @@ class DnsResolver:
         dkim_selectors: Selectors the scanner should probe at
             ``<selector>._domainkey.<domain>``. Exposed here so the
             scanner can read it without passing it through every call.
+        cname_probes: Subdomain labels the scanner should probe for CNAME
+            records. Same rationale as ``dkim_selectors``.
         last_used: The resolver IP that answered the last successful query
             (or ``None`` before the first call). Useful for the scanner's
             ``resolver_used`` audit column.
@@ -81,10 +111,12 @@ class DnsResolver:
         timeout: float = 5.0,
         qps: float = 5.0,
         dkim_selectors: Iterable[str] = DEFAULT_DKIM_SELECTORS,
+        cname_probes: Iterable[str] = DEFAULT_CNAME_PROBES,
     ):
         self.upstreams = upstreams or ["1.1.1.1", "8.8.8.8", "9.9.9.9"]
         self.timeout = timeout
         self.dkim_selectors = tuple(dkim_selectors)
+        self.cname_probes = tuple(cname_probes)
         self._buckets = {ip: _TokenBucket(qps) for ip in self.upstreams}
         self.last_used: str | None = None
 

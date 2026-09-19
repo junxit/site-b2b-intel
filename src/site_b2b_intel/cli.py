@@ -67,17 +67,31 @@ def scan(
             "--file", "-f", help="Batch scan: one domain per line"
         ),
     ] = None,
+    no_probe: Annotated[
+        bool,
+        typer.Option(
+            "--no-probe",
+            help=(
+                "Skip CNAME subdomain probing. Saves ~15 DNS queries per "
+                "domain (roughly halves scan time) at the cost of CNAME-"
+                "based detections. Worth it when batch-scanning at volume."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Scan one domain (or a file of domains)."""
     targets = _resolve_targets(domain, file)
     settings = get_settings()
     catalog = load_catalog()
     resolver = _make_resolver()
+    probes: tuple[str, ...] | None = () if no_probe else None
 
     with open_db(settings.db_path) as conn:
         for tgt in targets:
             try:
-                scan_id = scan_domain(conn, resolver, catalog, tgt)
+                scan_id = scan_domain(
+                    conn, resolver, catalog, tgt, cname_probes=probes
+                )
             except Exception as exc:  # noqa: BLE001
                 console.print(f"[red]✗[/red] {tgt}: {exc}")
                 continue

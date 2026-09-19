@@ -11,6 +11,7 @@ from __future__ import annotations
 import sqlite3
 import time
 from collections import defaultdict
+from collections.abc import Iterable
 from datetime import UTC, datetime
 
 from site_b2b_intel.db import repository as repo
@@ -24,7 +25,10 @@ from site_b2b_intel.resolve.parsers import (
     parse_dmarc_rua,
     parse_spf,
 )
-from site_b2b_intel.resolve.resolver import DEFAULT_DKIM_SELECTORS
+from site_b2b_intel.resolve.resolver import (
+    DEFAULT_CNAME_PROBES,
+    DEFAULT_DKIM_SELECTORS,
+)
 from site_b2b_intel.types import (
     NXDOMAIN,
     Detection,
@@ -44,7 +48,10 @@ def _now_iso() -> str:
 
 
 def collect_records(
-    resolver: Resolver, domain: str
+    resolver: Resolver,
+    domain: str,
+    *,
+    cname_probes: Iterable[str] | None = None,
 ) -> tuple[list[ParsedRecord], int, str | None]:
     """Probe DNS for a domain and synthesize derived record types.
 
@@ -58,6 +65,10 @@ def collect_records(
         resolver: Any :class:`Resolver` implementation. Real
             :class:`DnsResolver` for network scans, mocks for tests.
         domain: Already-normalized registrable domain.
+        cname_probes: Subdomain labels to probe for CNAMEs. Defaults to
+            the resolver's own list. Pass ``()`` to skip probing entirely
+            — that saves ~15 queries per domain, which matters when
+            batch-scanning.
 
     Returns:
         ``(records, flags, error)`` — ``flags`` is a bitfield of
@@ -171,6 +182,34 @@ def collect_records(
                 )
             )
 
+    # CNAME probes on common SaaS subdomains.
+    probes = (
+        tuple(cname_probes)
+        if cname_probes is not None
+        else getattr(resolver, "cname_probes", DEFAULT_CNAME_PROBES)
+    )
+    for label in probes:
+        pname = f"{label}.{domain}"
+        try:
+            cnames = resolver.query(pname, "CNAME")
+        except (NXDOMAIN, ResolverTimeout):
+            # Most probe labels simply don't exist, and a CNAME aimed at a
+            # decommissioned target also surfaces as NXDOMAIN. Neither says
+            # anything about the apex, so this must never abort the scan —
+            # otherwise one stale `shop.` record makes a live domain look
+            # nonexistent.
+            continue
+        for rec in cnames:
+            records.append(
+                ParsedRecord(
+                    record_type="CNAME",
+                    name=rec.name,
+                    value=rec.value,
+                    ttl=rec.ttl,
+                    source="cname-probe",
+                )
+            )
+
     return records, flags, None
 
 
@@ -179,6 +218,8 @@ def scan_domain(
     resolver: Resolver,
     catalog: VendorCatalog,
     domain_input: str,
+    *,
+    cname_probes: Iterable[str] | None = None,
 ) -> int:
     """End-to-end scan of one domain.
 
@@ -194,6 +235,8 @@ def scan_domain(
             ``(vendor_id, record_type, match_kind, pattern)``.
         domain_input: Raw domain / URL / email. Normalized to a
             registrable domain before resolution.
+        cname_probes: Forwarded to :func:`collect_records`. Pass ``()`` to
+            skip CNAME probing.
 
     Returns:
         The ``scan.id`` of the newly inserted scan row.
@@ -202,7 +245,9 @@ def scan_domain(
     started = time.monotonic()
     now = _now_iso()
 
-    records, flags, error = collect_records(resolver, domain_normalized)
+    records, flags, error = collect_records(
+        resolver, domain_normalized, cname_probes=cname_probes
+    )
     elapsed = time.monotonic() - started
 
     vendor_ids = {row["slug"]: row["id"] for row in repo.list_vendors(conn)}

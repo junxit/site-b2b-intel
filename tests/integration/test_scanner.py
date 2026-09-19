@@ -17,6 +17,7 @@ class FakeResolver:
     """Replays canned responses for ``(name, record_type)`` pairs."""
 
     dkim_selectors = ("google", "selector1", "k1", "mandrill", "s1", "smtpapi")
+    cname_probes = ("www", "shop", "status", "support")
     last_used = "fake://"
 
     def __init__(self, answers: dict[tuple[str, str], list[ParsedRecord]] | None = None):
@@ -88,6 +89,12 @@ def _stripe_like_resolver() -> FakeResolver:
             "TXT", "google._domainkey.stripe.com", "v=DKIM1; k=rsa; p=MIGfMA...", 3600
         ),
     ]
+    # CNAME probes — status. delegates to Statuspage
+    answers[("status.stripe.com", "CNAME")] = [
+        ParsedRecord(
+            "CNAME", "status.stripe.com", "stripe.statuspage.io", 300
+        ),
+    ]
     return FakeResolver(answers)
 
 
@@ -143,6 +150,44 @@ class TestCollectRecords:
         records, flags, error = collect_records(resolver, "nope.example")
         assert records == []
         assert error == "NXDOMAIN"
+
+    def test_cname_probe_emitted(self) -> None:
+        resolver = _stripe_like_resolver()
+        records, _, _ = collect_records(resolver, "stripe.com")
+        cnames = [r for r in records if r.record_type == "CNAME"]
+        assert len(cnames) == 1
+        assert cnames[0].value == "stripe.statuspage.io"
+        assert cnames[0].name == "status.stripe.com"
+        assert cnames[0].source == "cname-probe"
+
+    def test_dead_cname_probe_does_not_abort_scan(self) -> None:
+        """A CNAME aimed at a decommissioned target raises NXDOMAIN.
+
+        That must not be mistaken for the apex not existing — otherwise one
+        stale `shop.` record makes a live domain look nonexistent and the
+        whole scan is silently lost.
+        """
+        resolver = _stripe_like_resolver()
+        resolver.nxdomains.add("shop.stripe.com")
+        records, flags, error = collect_records(resolver, "stripe.com")
+        assert error is None
+        assert len(records) > 0
+        # The surviving probe still landed.
+        assert any(r.record_type == "CNAME" for r in records)
+
+    def test_probing_disabled_issues_no_cname_queries(self) -> None:
+        resolver = _stripe_like_resolver()
+        records, _, _ = collect_records(
+            resolver, "stripe.com", cname_probes=()
+        )
+        assert not [c for c in resolver.calls if c[1] == "CNAME"]
+        assert not [r for r in records if r.record_type == "CNAME"]
+
+    def test_probe_count_matches_label_count(self) -> None:
+        resolver = _stripe_like_resolver()
+        collect_records(resolver, "stripe.com")
+        cname_calls = [c for c in resolver.calls if c[1] == "CNAME"]
+        assert len(cname_calls) == len(FakeResolver.cname_probes)
 
     def test_no_mx_sets_flag(self) -> None:
         from site_b2b_intel.types import ScanFlag
