@@ -86,3 +86,71 @@ def mailbox_domain(mailbox: str) -> str | None:
     if "@" not in mailbox:
         return None
     return mailbox.rsplit("@", 1)[1].lower()
+
+
+def parse_caa(value: str) -> tuple[int, str, str] | None:
+    """Split a rendered CAA record into its ``(flags, tag, value)`` triple.
+
+    Args:
+        value: A CAA record as rendered by the resolver, e.g.
+            ``'0 issue letsencrypt.org'``.
+
+    Returns:
+        ``(flags, lowercased_tag, value)``, or ``None`` if the input does
+        not parse as a CAA triple.
+
+    Examples:
+        >>> parse_caa('0 issue letsencrypt.org')
+        (0, 'issue', 'letsencrypt.org')
+        >>> parse_caa('128 issuewild digicert.com')
+        (128, 'issuewild', 'digicert.com')
+        >>> parse_caa('garbage') is None
+        True
+    """
+    parts = value.strip().split(None, 2)
+    if len(parts) < 3:
+        return None
+    flags_s, tag, rest = parts
+    try:
+        flags = int(flags_s)
+    except ValueError:
+        return None
+    return flags, tag.lower(), rest.strip().strip('"').strip()
+
+
+def caa_issuer_domain(value: str) -> str | None:
+    """Return the certificate authority a CAA record authorizes, if any.
+
+    Only ``issue`` and ``issuewild`` name a CA. ``iodef`` carries a
+    reporting URI rather than an issuer — treating it as one would
+    manufacture false CA detections, so it is ignored.
+
+    Per RFC 8659, a value of ``;`` means *no issuance permitted*. It
+    authorizes nobody, so it yields ``None`` rather than an empty issuer.
+
+    Args:
+        value: A CAA record as rendered by the resolver.
+
+    Returns:
+        The lowercased issuer domain with any CAA parameters stripped, or
+        ``None`` if this record names no CA.
+
+    Examples:
+        >>> caa_issuer_domain('0 issue letsencrypt.org')
+        'letsencrypt.org'
+        >>> caa_issuer_domain('0 issuewild "digicert.com; policy=ev"')
+        'digicert.com'
+        >>> caa_issuer_domain('0 iodef mailto:sec@example.com') is None
+        True
+        >>> caa_issuer_domain('0 issue ";"') is None
+        True
+    """
+    parsed = parse_caa(value)
+    if parsed is None:
+        return None
+    _flags, tag, raw = parsed
+    if tag not in {"issue", "issuewild"}:
+        return None
+    # CAA parameters trail a semicolon: `ca.example; account=12345`
+    issuer = raw.split(";", 1)[0].strip().strip('"').strip()
+    return issuer.lower() if issuer else None

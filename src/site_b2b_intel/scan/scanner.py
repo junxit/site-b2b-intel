@@ -18,6 +18,7 @@ from site_b2b_intel.fingerprints.catalog import VendorCatalog
 from site_b2b_intel.fingerprints.matcher import match
 from site_b2b_intel.normalize import to_registrable_domain
 from site_b2b_intel.resolve.parsers import (
+    caa_issuer_domain,
     mailbox_domain,
     parse_dmarc,
     parse_dmarc_rua,
@@ -92,6 +93,24 @@ def collect_records(
                         value=target,
                         ttl=rec.ttl,
                         source="spf-include",
+                    )
+                )
+
+    # Derive the authorized CA from each CAA record. The raw CAA row is kept
+    # alongside so the flags and the issue/issuewild distinction survive for
+    # audit; only the derived record carries a bare issuer domain that simple
+    # exact/suffix rules can match.
+    for rec in list(records):
+        if rec.record_type == "CAA":
+            issuer = caa_issuer_domain(rec.value)
+            if issuer:
+                records.append(
+                    ParsedRecord(
+                        record_type="CAA_ISSUER",
+                        name=rec.name,
+                        value=issuer,
+                        ttl=rec.ttl,
+                        source="caa-parse",
                     )
                 )
 

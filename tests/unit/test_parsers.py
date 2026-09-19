@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from site_b2b_intel.resolve.parsers import (
+    caa_issuer_domain,
     mailbox_domain,
+    parse_caa,
     parse_dmarc,
     parse_dmarc_rua,
     parse_spf,
@@ -96,3 +98,77 @@ class TestMailboxDomain:
 
     def test_no_at_returns_none(self) -> None:
         assert mailbox_domain("not-a-mailbox") is None
+
+
+class TestParseCaa:
+    def test_issue(self) -> None:
+        assert parse_caa("0 issue letsencrypt.org") == (
+            0,
+            "issue",
+            "letsencrypt.org",
+        )
+
+    def test_issuewild(self) -> None:
+        assert parse_caa("0 issuewild digicert.com") == (
+            0,
+            "issuewild",
+            "digicert.com",
+        )
+
+    def test_critical_flag_preserved(self) -> None:
+        flags, tag, _ = parse_caa("128 issue sectigo.com")
+        assert flags == 128
+        assert tag == "issue"
+
+    def test_tag_lowercased(self) -> None:
+        assert parse_caa("0 ISSUE letsencrypt.org")[1] == "issue"
+
+    def test_quotes_stripped(self) -> None:
+        assert parse_caa('0 issue "letsencrypt.org"')[2] == "letsencrypt.org"
+
+    def test_too_few_fields(self) -> None:
+        assert parse_caa("0 issue") is None
+        assert parse_caa("garbage") is None
+
+    def test_non_numeric_flags(self) -> None:
+        assert parse_caa("x issue letsencrypt.org") is None
+
+
+class TestCaaIssuerDomain:
+    def test_issue(self) -> None:
+        assert caa_issuer_domain("0 issue letsencrypt.org") == "letsencrypt.org"
+
+    def test_issuewild(self) -> None:
+        assert caa_issuer_domain("0 issuewild digicert.com") == "digicert.com"
+
+    def test_parameters_stripped(self) -> None:
+        assert (
+            caa_issuer_domain('0 issue "digicert.com; policy=ev"')
+            == "digicert.com"
+        )
+
+    def test_validationmethods_stripped(self) -> None:
+        assert (
+            caa_issuer_domain(
+                "0 issue letsencrypt.org;validationmethods=dns-01"
+            )
+            == "letsencrypt.org"
+        )
+
+    def test_lowercased(self) -> None:
+        assert caa_issuer_domain("0 issue LetsEncrypt.ORG") == "letsencrypt.org"
+
+    def test_iodef_ignored(self) -> None:
+        # A reporting URI is not a CA. Treating it as one would invent a
+        # detection for a vendor the domain does not actually use.
+        assert caa_issuer_domain("0 iodef mailto:security@example.com") is None
+        assert caa_issuer_domain("0 iodef https://example.com/caa") is None
+
+    def test_no_issuance_permitted(self) -> None:
+        # RFC 8659: `;` authorizes nobody.
+        assert caa_issuer_domain('0 issue ";"') is None
+        assert caa_issuer_domain("0 issue ;") is None
+
+    def test_malformed(self) -> None:
+        assert caa_issuer_domain("garbage") is None
+        assert caa_issuer_domain("") is None

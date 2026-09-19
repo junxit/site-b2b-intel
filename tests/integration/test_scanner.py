@@ -63,6 +63,16 @@ def _stripe_like_resolver() -> FakeResolver:
         ParsedRecord("NS", "stripe.com", "ns1.ns.cloudflare.com", 86400),
         ParsedRecord("NS", "stripe.com", "ns2.ns.cloudflare.com", 86400),
     ]
+    # CAA — two authorized issuers plus an iodef that must NOT become a vendor
+    answers[("stripe.com", "CAA")] = [
+        ParsedRecord("CAA", "stripe.com", "0 issue amazon.com", 300),
+        ParsedRecord(
+            "CAA", "stripe.com", '0 issuewild "digicert.com; policy=ev"', 300
+        ),
+        ParsedRecord(
+            "CAA", "stripe.com", "0 iodef mailto:security@stripe.com", 300
+        ),
+    ]
     # DMARC
     answers[("_dmarc.stripe.com", "TXT")] = [
         ParsedRecord(
@@ -108,6 +118,24 @@ class TestCollectRecords:
         records, _, _ = collect_records(resolver, "stripe.com")
         dkim = [r for r in records if r.record_type == "DKIM_SELECTOR"]
         assert {r.value for r in dkim} == {"google"}
+
+    def test_caa_issuer_emitted(self) -> None:
+        resolver = _stripe_like_resolver()
+        records, _, _ = collect_records(resolver, "stripe.com")
+        issuers = {
+            r.value for r in records if r.record_type == "CAA_ISSUER"
+        }
+        # iodef is a reporting address, not a CA — it must not appear.
+        assert issuers == {"amazon.com", "digicert.com"}
+
+    def test_raw_caa_preserved_alongside_issuer(self) -> None:
+        """The derived record must not replace the auditable original."""
+        resolver = _stripe_like_resolver()
+        records, _, _ = collect_records(resolver, "stripe.com")
+        raw = [r for r in records if r.record_type == "CAA"]
+        assert len(raw) == 3
+        assert any("iodef" in r.value for r in raw)
+        assert any(r.value.startswith("0 issuewild") for r in raw)
 
     def test_nxdomain_returns_error(self) -> None:
         resolver = FakeResolver()
