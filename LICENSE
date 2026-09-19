@@ -1,0 +1,43 @@
+Copyright © 2026 Jade Naaman. All rights reserved.
+
+PROPRIETARY — ALL RIGHTS RESERVED
+
+This software and its accompanying source code, documentation and data
+files (the "Software") are made publicly viewable for the sole purposes of
+reference, evaluation and review.
+
+No license, express or implied, is granted to any person or entity to use,
+copy, reproduce, modify, adapt, merge, publish, distribute, sublicense,
+create derivative works from, host, or sell the Software or any portion of
+it, by any means and in any form, without the prior written permission of
+the copyright holder.
+
+Public visibility of this repository does not constitute a grant of any
+right under copyright, patent, trademark or any other intellectual property
+law. Nothing in this repository should be construed as placing the Software
+in the public domain or licensing it under any open source license.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHOR OR COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+---
+
+A NOTE ON THE DATA THIS TOOL PRODUCES
+
+The Software reads DNS records that domain owners publish to the public
+Domain Name System. It performs ordinary recursive DNS queries and nothing
+else — it does not scrape web pages, execute JavaScript, bypass access
+controls, or access any non-public system.
+
+Users of the Software remain responsible for their own conduct, including
+query volume and rate limiting against third-party resolvers, and for
+compliance with any applicable law governing the collection, storage,
+publication or onward use of information about the organizations they scan.
+
+For permission requests, contact the copyright holder via
+https://github.com/junxit

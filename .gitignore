@@ -11,10 +11,11 @@ dist/
 .installed.cfg
 
 # Environments
+# .python-version is deliberately NOT ignored — it pins the interpreter so
+# a fresh clone reproduces the same environment.
 .venv/
 venv/
 env/
-.python-version
 
 # uv
 uv.lock.tmp

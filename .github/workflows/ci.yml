@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: this workflow only reads the tree and runs tests. No
+# untrusted input from the event payload is interpolated anywhere below —
+# the only expression used is the matrix value defined in this file.
+permissions:
+  contents: read
+
+# The test suite is fully offline (tests/integration/test_scanner.py uses a
+# FakeResolver), so CI needs no network access beyond installing deps.
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --python ${{ matrix.python-version }}
+
+      - name: Run tests
+        run: uv run pytest -q
+
+      # Guards the failure mode that is invisible in a diff: a rule with a
+      # typo'd record_type, or a vendor left with no rules, is not an error
+      # at runtime — it just silently never matches.
+      - name: Validate fingerprint catalog
+        run: uv run b2b-intel rules validate
+
+      # The fingerprint catalog is data, not code, and a .gitignore mistake
+      # once excluded all of it. Fail loudly if it stops shipping.
+      - name: Check catalog is packaged
+        run: |
+          count=$(git ls-files 'src/site_b2b_intel/fingerprints/data/*' \
+                  'src/site_b2b_intel/fingerprints/data/**/*' | wc -l)
+          echo "catalog files tracked: $count"
+          test "$count" -ge 10
