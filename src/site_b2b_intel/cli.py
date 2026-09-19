@@ -402,6 +402,65 @@ def vendors_domains(
         writer.writerows(records)
 
 
+@rules_app.command("validate")
+def rules_validate() -> None:
+    """Check the YAML catalog for problems before they reach the DB.
+
+    Catches the failure modes that are otherwise invisible: a rule that can
+    never match, a vendor that can never be detected, or a suffix rule
+    loose enough to match an attacker-registered lookalike. Run this before
+    opening a rule pull request.
+    """
+    try:
+        catalog = load_catalog()
+    except Exception as exc:  # noqa: BLE001
+        err_console.print("[red]✗ catalog failed to load[/red]")
+        err_console.print(str(exc))
+        raise typer.Exit(1) from exc
+
+    problems: list[str] = []
+
+    with_rules = {r.vendor_slug for r in catalog.rules}
+    for slug in sorted(catalog.vendor_slugs() - with_rules):
+        problems.append(
+            f"vendor {slug!r} has no rules, so it can never be detected"
+        )
+
+    seen: set[tuple[str, str, str, str]] = set()
+    for r in catalog.rules:
+        key = (r.vendor_slug, r.record_type, r.match_kind, r.pattern)
+        if key in seen:
+            problems.append(
+                f"duplicate rule {r.vendor_slug}:{r.record_type}:"
+                f"{r.pattern!r} (silently deduped on seed)"
+            )
+        seen.add(key)
+
+    for r in catalog.rules:
+        if r.match_kind == "suffix" and not r.pattern.startswith("."):
+            problems.append(
+                f"suffix rule {r.vendor_slug}:{r.pattern!r} has no leading "
+                f"dot, so it also matches lookalikes such as "
+                f"'evil{r.pattern}'"
+            )
+
+    if problems:
+        for p in problems:
+            err_console.print(f"  [red]✗[/red] {p}")
+        err_console.print(
+            f"\n[red]{len(problems)} problem(s) found.[/red]"
+        )
+        raise typer.Exit(1)
+
+    by_type = catalog.rules_by_record_type()
+    console.print(
+        f"[green]✓[/green] catalog OK — {len(catalog.vendors)} vendors, "
+        f"{len(catalog.rules)} rules across {len(by_type)} record types"
+    )
+    for rt in sorted(by_type):
+        console.print(f"    {rt:<16} {len(by_type[rt]):>3}")
+
+
 @rules_app.command("list")
 def rules_list(
     show_all: Annotated[
