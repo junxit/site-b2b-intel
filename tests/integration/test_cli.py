@@ -100,6 +100,45 @@ class TestReportFormats:
         assert "No scans found" in result.output
 
 
+class TestCatalogGuard:
+    """Regression: `scan` before `init` silently found zero vendors.
+
+    open_db creates the database for any command but only `init` seeds it,
+    so a first-time user running `scan` got a structurally valid empty
+    catalog, a scan that resolved everything correctly, and "0 vendors"
+    with a success marker.
+    """
+
+    def test_report_on_unseeded_db_seeds_it(self) -> None:
+        # `report` touches the DB without ever calling init.
+        result = runner.invoke(app, ["report", "never-scanned.com"])
+        assert result.exit_code == 0
+        # And the catalog is now present for the next command.
+        listing = runner.invoke(app, ["vendors", "list"])
+        assert "google-workspace" in listing.output
+
+    def test_drift_warning_when_db_lags_yaml(
+        self, tmp_path: Path
+    ) -> None:
+        from site_b2b_intel.db import repository as repo
+        from site_b2b_intel.db.connection import open_db
+        from site_b2b_intel.config import get_settings
+
+        runner.invoke(app, ["init"])
+        # Simulate a YAML edit that was never reseeded by disabling a rule.
+        with open_db(get_settings().db_path) as conn:
+            rule_id = repo.list_rules(conn)[0]["id"]
+            conn.execute(
+                "UPDATE fingerprint_rule SET enabled=0 WHERE id=?",
+                (rule_id,),
+            )
+            conn.commit()
+
+        result = runner.invoke(app, ["report", "never-scanned.com"])
+        assert result.exit_code == 0
+        assert "drift" in result.output.lower()
+
+
 class TestScanArgumentHandling:
     def test_no_target_exits_nonzero(self) -> None:
         runner.invoke(app, ["init"])

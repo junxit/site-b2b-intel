@@ -1,3 +1,15 @@
+0.2.1 — fix silent zero-detection scans on an unseeded database
+- scan/report/vendors/rules now seed the catalog automatically if the
+  database has never been initialized. Previously open_db would create a
+  schema-valid but empty database for any command, so running `scan`
+  before `init` resolved DNS correctly, stored every record, then
+  discarded all detections because no rules existed to map them to — and
+  reported "0 vendors" with a success marker
+- scan_domain raises UnseededCatalogError instead of silently dropping
+  every detection when the database has no vendors
+- Warn when the database has fewer active rules than the YAML defines,
+  since rules missing from the database are ignored during matching
+
 0.2.0 — detection coverage, machine-readable output, first public release
 - CAA issuer detection: parse issue/issuewild into the authorized CA
   (iodef correctly ignored; ";" means no issuance and yields nothing)

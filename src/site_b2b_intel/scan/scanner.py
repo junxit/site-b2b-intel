@@ -39,6 +39,16 @@ from site_b2b_intel.types import (
 )
 
 
+class UnseededCatalogError(RuntimeError):
+    """Raised when scanning against a database with no vendor catalog.
+
+    ``open_db`` creates the database and applies the schema on demand, so
+    it is easy to end up with a structurally valid but empty catalog. That
+    state would otherwise produce a successful-looking scan with zero
+    detections, which is far worse than an error.
+    """
+
+
 def _now_iso() -> str:
     return (
         datetime.now(UTC)
@@ -245,12 +255,23 @@ def scan_domain(
     started = time.monotonic()
     now = _now_iso()
 
+    vendor_ids = {row["slug"]: row["id"] for row in repo.list_vendors(conn)}
+    if not vendor_ids:
+        # Detections are matched against the in-memory YAML catalog but
+        # persisted by DB row id. With an unseeded database every one of
+        # them maps to nothing and gets dropped, so the scan "succeeds"
+        # while reporting zero vendors. Refuse instead of losing the data.
+        raise UnseededCatalogError(
+            "the database has no vendor catalog, so every detection would "
+            "be discarded. Run `b2b-intel init` (or call seed_catalog) "
+            "before scanning."
+        )
+
     records, flags, error = collect_records(
         resolver, domain_normalized, cname_probes=cname_probes
     )
     elapsed = time.monotonic() - started
 
-    vendor_ids = {row["slug"]: row["id"] for row in repo.list_vendors(conn)}
     rule_id_map: dict[tuple[int, str, str, str], int] = {}
     for row in repo.list_rules(conn, enabled_only=True):
         key = (

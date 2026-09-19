@@ -7,7 +7,10 @@ catalog, and delegates to a function elsewhere. Keep business logic out.
 from __future__ import annotations
 
 import csv
+import sqlite3
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any
@@ -62,6 +65,55 @@ def _make_resolver() -> DnsResolver:
     return DnsResolver(
         upstreams=s.resolvers, timeout=s.dns_timeout, qps=s.rate_limit_qps
     )
+
+
+def _ensure_catalog(
+    conn: sqlite3.Connection, catalog: Any, *, status: Console
+) -> None:
+    """Make sure the database actually has a catalog to match against.
+
+    ``open_db`` creates the database and applies the schema for any
+    command, so running ``scan`` before ``init`` yields a structurally
+    valid but empty catalog. Detections are matched against the YAML
+    in memory and then persisted by DB row id, so an empty database
+    silently discards every one of them and the scan reports zero
+    vendors while looking like it succeeded.
+
+    An empty vendor table is unambiguous — a seeded database always has
+    vendors — so seeding here is safe and cannot clobber deliberate local
+    state. A partially stale catalog only warns, since that may well be
+    intentional.
+    """
+    if not repo.list_vendors(conn):
+        status.print(
+            "[dim]No catalog in the database yet — seeding from YAML.[/dim]"
+        )
+        seed_catalog(conn, catalog)
+        return
+
+    db_rules = len(repo.list_rules(conn, enabled_only=True))
+    yaml_rules = len(catalog.rules)
+    if db_rules != yaml_rules:
+        status.print(
+            f"[yellow]⚠[/yellow]  Catalog drift: YAML defines "
+            f"{yaml_rules} rules, the database has {db_rules}. Rules "
+            f"missing from the database are ignored during matching — "
+            f"run [bold]b2b-intel reseed[/bold] to sync."
+        )
+
+
+@contextmanager
+def _seeded_db(status: Console | None = None) -> Iterator[sqlite3.Connection]:
+    """Open the configured database, seeding the catalog if it's empty.
+
+    Every command except ``init`` and ``reseed`` goes through here, so no
+    command can operate against an unseeded catalog and report a
+    confidently wrong empty result.
+    """
+    settings = get_settings()
+    with open_db(settings.db_path) as conn:
+        _ensure_catalog(conn, load_catalog(), status=status or console)
+        yield conn
 
 
 @app.command()
@@ -123,7 +175,6 @@ def scan(
 ) -> None:
     """Scan one domain (or a file of domains)."""
     targets = _resolve_targets(domain, file)
-    settings = get_settings()
     catalog = load_catalog()
     resolver = _make_resolver()
     probes: tuple[str, ...] | None = () if no_probe else None
@@ -131,7 +182,7 @@ def scan(
     status = console if output_format is OutputFormat.table else err_console
 
     payloads: list[dict[str, Any]] = []
-    with open_db(settings.db_path) as conn:
+    with _seeded_db(status) as conn:
         for tgt in targets:
             try:
                 scan_id = scan_domain(
@@ -211,9 +262,9 @@ def report(
     ] = False,
 ) -> None:
     """Show the most recent scan + first/last-seen for a domain."""
-    settings = get_settings()
     normalized = to_registrable_domain(domain)
-    with open_db(settings.db_path) as conn:
+    status = console if output_format is OutputFormat.table else err_console
+    with _seeded_db(status) as conn:
         payload = domain_payload(
             conn, normalized, include_records=include_records
         )
@@ -244,8 +295,7 @@ def reseed() -> None:
 @vendors_app.command("list")
 def vendors_list() -> None:
     """List all vendors."""
-    settings = get_settings()
-    with open_db(settings.db_path) as conn:
+    with _seeded_db() as conn:
         vendors = repo.list_vendors(conn)
     table = Table(title=f"Vendors ({len(vendors)})")
     table.add_column("Slug", style="cyan")
@@ -259,8 +309,7 @@ def vendors_list() -> None:
 @vendors_app.command("show")
 def vendors_show(slug: str) -> None:
     """Show a single vendor with its profile and rules."""
-    settings = get_settings()
-    with open_db(settings.db_path) as conn:
+    with _seeded_db() as conn:
         v = repo.get_vendor_by_slug(conn, slug)
         if v is None:
             console.print(f"[red]No vendor with slug {slug!r}[/red]")
@@ -328,8 +377,8 @@ def vendors_domains(
     The inverse of `report`: instead of "what does this company use?",
     answers "who uses this vendor?" — across everything scanned so far.
     """
-    settings = get_settings()
-    with open_db(settings.db_path) as conn:
+    status = console if output_format is OutputFormat.table else err_console
+    with _seeded_db(status) as conn:
         vendor = repo.get_vendor_by_slug(conn, slug)
         if vendor is None:
             err_console.print(f"[red]No vendor with slug {slug!r}[/red]")
@@ -472,8 +521,7 @@ def rules_list(
     ] = False,
 ) -> None:
     """List fingerprint rules."""
-    settings = get_settings()
-    with open_db(settings.db_path) as conn:
+    with _seeded_db() as conn:
         rules = repo.list_rules(conn, enabled_only=not show_all)
     table = Table(title=f"Rules ({len(rules)})")
     table.add_column("Vendor", style="cyan")

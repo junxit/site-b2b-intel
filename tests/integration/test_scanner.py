@@ -9,7 +9,11 @@ import pytest
 
 from site_b2b_intel.db import repository as repo
 from site_b2b_intel.fingerprints.catalog import load_catalog, seed_catalog
-from site_b2b_intel.scan.scanner import collect_records, scan_domain
+from site_b2b_intel.scan.scanner import (
+    UnseededCatalogError,
+    collect_records,
+    scan_domain,
+)
 from site_b2b_intel.types import NXDOMAIN, ParsedRecord
 
 
@@ -245,6 +249,24 @@ class TestScanDomain:
         obs = repo.observations_for_domain(db, "stripe.com")
         # Every observation should have detection_count >= 2 now
         assert all(o["detection_count"] >= 2 for o in obs)
+
+    def test_unseeded_db_raises_instead_of_silently_finding_nothing(
+        self, db: sqlite3.Connection
+    ) -> None:
+        """Regression: scanning an unseeded DB reported success with zero
+        vendors.
+
+        Detections are matched against the in-memory YAML catalog but
+        persisted by DB row id. With no vendors in the database every
+        detection mapped to nothing and was dropped by a bare `continue`,
+        so a scan that resolved 40+ records looked like a clean run that
+        simply found no vendors. Failing loudly is the whole point.
+        """
+        catalog = load_catalog()
+        # Deliberately NOT seeded.
+        resolver = _stripe_like_resolver()
+        with pytest.raises(UnseededCatalogError, match="no vendor catalog"):
+            scan_domain(db, resolver, catalog, "stripe.com")
 
     def test_nxdomain_persists_scan_with_error(
         self, db: sqlite3.Connection

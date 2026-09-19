@@ -1,6 +1,6 @@
 [project]
 name = "site-b2b-intel"
-version = "0.2.0"
+version = "0.2.1"
 description = "DNS-based B2B vendor intelligence — identify the SaaS vendors a company uses from its public DNS records."
 readme = "README.md"
 requires-python = ">=3.12"
