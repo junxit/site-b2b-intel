@@ -8,16 +8,22 @@ DB via the repository layer (idempotent — safe to re-run).
 
 from __future__ import annotations
 
+import re
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from site_b2b_intel.db import repository as repo
-from site_b2b_intel.types import Confidence, Rule
+from site_b2b_intel.types import (
+    KNOWN_MATCH_KINDS,
+    KNOWN_RECORD_TYPES,
+    Confidence,
+    Rule,
+)
 
 _DATA_DIR = Path(__file__).parent / "data"
 
@@ -47,7 +53,14 @@ class Vendor(BaseModel):
 
 
 class _RuleEntry(BaseModel):
-    """Raw rule entry as authored in YAML."""
+    """Raw rule entry as authored in YAML.
+
+    Validation here is deliberately strict. A rule with a misspelled
+    ``record_type`` or ``match_kind`` is not a runtime error — it simply
+    never matches anything, which is invisible until someone notices a
+    vendor is undetectable. Failing at load turns a silent gap into a
+    loud one.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -56,6 +69,38 @@ class _RuleEntry(BaseModel):
     match_kind: str
     pattern: str
     confidence: Confidence
+
+    @field_validator("record_type")
+    @classmethod
+    def _known_record_type(cls, v: str) -> str:
+        if v not in KNOWN_RECORD_TYPES:
+            raise ValueError(
+                f"unknown record_type {v!r}; expected one of "
+                f"{', '.join(sorted(KNOWN_RECORD_TYPES))}"
+            )
+        return v
+
+    @field_validator("match_kind")
+    @classmethod
+    def _known_match_kind(cls, v: str) -> str:
+        if v not in KNOWN_MATCH_KINDS:
+            raise ValueError(
+                f"unknown match_kind {v!r}; expected one of "
+                f"{', '.join(sorted(KNOWN_MATCH_KINDS))}"
+            )
+        return v
+
+    @model_validator(mode="after")
+    def _regex_compiles(self) -> _RuleEntry:
+        """A malformed regex would otherwise raise mid-scan, per record."""
+        if self.match_kind == "regex":
+            try:
+                re.compile(self.pattern)
+            except re.error as e:
+                raise ValueError(
+                    f"invalid regex pattern {self.pattern!r}: {e}"
+                ) from e
+        return self
 
 
 class _RulesFile(BaseModel):

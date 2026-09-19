@@ -9,25 +9,46 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal, Protocol, runtime_checkable
+from typing import Literal, Protocol, get_args, runtime_checkable
 
-# Record types we actually resolve / store. SPF, DMARC, DKIM are TXT records
-# under the hood but we tag them with a synthetic record_type after parsing so
-# the matcher can target them directly.
+# Record types the scanner produces. Two groups:
+#
+#   * Resolved directly from DNS — the value is the record's own content.
+#   * Synthesized by the scanner from the contents of a resolved record, so
+#     the matcher can target a single meaningful token with a simple rule
+#     rather than re-parsing a compound string. For example a TXT record
+#     holding `v=spf1 include:_spf.google.com ~all` also yields an `SPF`
+#     record whose value is just `_spf.google.com`.
+#
+# The raw record is always persisted alongside anything derived from it, so
+# the audit trail survives.
 RecordType = Literal[
+    # Resolved directly
     "A",
     "AAAA",
     "TXT",
     "MX",
     "NS",
     "CNAME",
-    "SPF",
-    "DMARC",
-    "DKIM",
     "CAA",
+    # Synthesized by the scanner
+    "SPF",
+    "DMARC_RUA",
+    "DKIM_SELECTOR",
+    "AWSSES_VERIFY",
+    "CAA_ISSUER",
 ]
 
+#: Every valid `record_type`, derived from :data:`RecordType` so the Literal
+#: stays the single source of truth. The catalog loader validates YAML rules
+#: against this — a typo like `record_type: DMARC` would otherwise produce a
+#: rule that silently never matches anything.
+KNOWN_RECORD_TYPES: frozenset[str] = frozenset(get_args(RecordType))
+
 MatchKind = Literal["prefix", "suffix", "contains", "exact", "regex"]
+
+#: Every valid `match_kind`, kept in sync with :data:`MatchKind`.
+KNOWN_MATCH_KINDS: frozenset[str] = frozenset(get_args(MatchKind))
 
 
 class Confidence(str, Enum):

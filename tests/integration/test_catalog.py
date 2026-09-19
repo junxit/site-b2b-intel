@@ -6,9 +6,11 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from site_b2b_intel.db import repository as repo
 from site_b2b_intel.fingerprints.catalog import load_catalog, seed_catalog
+from site_b2b_intel.types import KNOWN_MATCH_KINDS, KNOWN_RECORD_TYPES
 
 
 def test_default_catalog_loads() -> None:
@@ -128,3 +130,62 @@ def test_vendor_profile_appended_on_change(
         "SELECT COUNT(*) AS n FROM vendor_profile WHERE vendor_id=?", (vid,)
     ).fetchone()
     assert rows["n"] == 2
+
+
+def _write_catalog(base: Path, rule_body: str) -> None:
+    """Write a one-vendor catalog with a single rule, for validation tests."""
+    (base / "vendors.yaml").write_text(
+        "vendors:\n  - slug: acme\n    name: Acme\n    category: test\n"
+    )
+    (base / "rules").mkdir(exist_ok=True)
+    (base / "rules" / "r.yaml").write_text(f"rules:\n  - {rule_body}\n")
+
+
+class TestRuleValidation:
+    """Load-time guards.
+
+    A rule with a bad record_type or match_kind is not a crash — it just
+    silently never matches. These turn that into a load failure.
+    """
+
+    def test_unknown_record_type_raises(self, tmp_path: Path) -> None:
+        _write_catalog(
+            tmp_path,
+            'vendor: acme\n    record_type: DMARC\n'
+            '    match_kind: exact\n    pattern: x\n    confidence: high',
+        )
+        with pytest.raises(ValidationError, match="unknown record_type"):
+            load_catalog(tmp_path)
+
+    def test_unknown_match_kind_raises(self, tmp_path: Path) -> None:
+        _write_catalog(
+            tmp_path,
+            'vendor: acme\n    record_type: TXT\n'
+            '    match_kind: startswith\n    pattern: x\n    confidence: high',
+        )
+        with pytest.raises(ValidationError, match="unknown match_kind"):
+            load_catalog(tmp_path)
+
+    def test_invalid_regex_raises(self, tmp_path: Path) -> None:
+        _write_catalog(
+            tmp_path,
+            'vendor: acme\n    record_type: NS\n'
+            '    match_kind: regex\n    pattern: "[unclosed"\n'
+            '    confidence: high',
+        )
+        with pytest.raises(ValidationError, match="invalid regex"):
+            load_catalog(tmp_path)
+
+    def test_valid_regex_accepted(self, tmp_path: Path) -> None:
+        _write_catalog(
+            tmp_path,
+            'vendor: acme\n    record_type: NS\n'
+            '    match_kind: regex\n    pattern: "\\\\.awsdns-\\\\d+\\\\."\n'
+            '    confidence: high',
+        )
+        assert len(load_catalog(tmp_path).rules) == 1
+
+    def test_shipped_catalog_uses_only_known_types(self) -> None:
+        for rule in load_catalog().rules:
+            assert rule.record_type in KNOWN_RECORD_TYPES
+            assert rule.match_kind in KNOWN_MATCH_KINDS
