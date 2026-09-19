@@ -159,6 +159,57 @@ class TestScanAndDetection:
         assert rows[0]["last_seen"] == late
         assert rows[0]["detection_count"] == 2
 
+    def test_domains_for_vendor_is_inverse_of_observations(
+        self, db: sqlite3.Connection
+    ) -> None:
+        vid = repo.upsert_vendor(
+            db, slug="cf", name="Cloudflare", category="cdn"
+        )
+        for dom, when in (
+            ("a.com", "2026-01-01T00:00:00Z"),
+            ("b.com", "2026-03-01T00:00:00Z"),
+            ("c.com", "2026-02-01T00:00:00Z"),
+        ):
+            repo.upsert_observation(
+                db, domain_normalized=dom, vendor_id=vid, seen_at=when
+            )
+
+        rows = repo.domains_for_vendor(db, "cf")
+        # Most recently seen first.
+        assert [r["domain_normalized"] for r in rows] == [
+            "b.com",
+            "c.com",
+            "a.com",
+        ]
+
+    def test_domains_for_vendor_limit(self, db: sqlite3.Connection) -> None:
+        vid = repo.upsert_vendor(db, slug="cf", name="CF", category="cdn")
+        for dom in ("a.com", "b.com", "c.com"):
+            repo.upsert_observation(
+                db, domain_normalized=dom, vendor_id=vid, seen_at=_now()
+            )
+        assert len(repo.domains_for_vendor(db, "cf", limit=2)) == 2
+
+    def test_domains_for_vendor_since(self, db: sqlite3.Connection) -> None:
+        vid = repo.upsert_vendor(db, slug="cf", name="CF", category="cdn")
+        repo.upsert_observation(
+            db, domain_normalized="old.com", vendor_id=vid,
+            seen_at="2024-01-01T00:00:00Z",
+        )
+        repo.upsert_observation(
+            db, domain_normalized="new.com", vendor_id=vid,
+            seen_at="2026-01-01T00:00:00Z",
+        )
+        rows = repo.domains_for_vendor(
+            db, "cf", since="2025-01-01T00:00:00Z"
+        )
+        assert [r["domain_normalized"] for r in rows] == ["new.com"]
+
+    def test_domains_for_unknown_vendor_is_empty(
+        self, db: sqlite3.Connection
+    ) -> None:
+        assert repo.domains_for_vendor(db, "nope") == []
+
     def test_detection_idempotent(self, db: sqlite3.Connection) -> None:
         vid = repo.upsert_vendor(
             db, slug="cf", name="Cloudflare", category="cdn"

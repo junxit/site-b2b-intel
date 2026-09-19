@@ -480,6 +480,51 @@ def observations_for_domain(
     ).fetchall()
 
 
+def domains_for_vendor(
+    conn: sqlite3.Connection,
+    vendor_slug: str,
+    *,
+    limit: int | None = None,
+    since: str | None = None,
+) -> list[sqlite3.Row]:
+    """Every domain observed using a vendor, most recently seen first.
+
+    The inverse of :func:`observations_for_domain`, and the query the
+    ``idx_dvo_vendor_lastseen(vendor_id, last_seen)`` index exists for.
+
+    Args:
+        conn: Open DB connection.
+        vendor_slug: Vendor to look up.
+        limit: Cap the number of rows returned.
+        since: ISO timestamp; only return domains whose ``last_seen`` is
+            at or after this. Useful for excluding stale observations of
+            a vendor a company has since dropped.
+
+    Returns:
+        Rows of ``(domain_normalized, first_seen, last_seen,
+        detection_count)``. Empty if the vendor is unknown or unobserved.
+    """
+    sql = """
+        SELECT
+            o.domain_normalized,
+            o.first_seen,
+            o.last_seen,
+            o.detection_count
+        FROM domain_vendor_observation o
+        JOIN vendor v ON v.id = o.vendor_id
+        WHERE v.slug = ?
+    """
+    params: list[object] = [vendor_slug]
+    if since is not None:
+        sql += " AND o.last_seen >= ?"
+        params.append(since)
+    sql += " ORDER BY o.last_seen DESC, o.domain_normalized"
+    if limit is not None:
+        sql += " LIMIT ?"
+        params.append(limit)
+    return conn.execute(sql, params).fetchall()
+
+
 def dns_records_for_scan(
     conn: sqlite3.Connection, scan_id: int
 ) -> list[sqlite3.Row]:

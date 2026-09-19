@@ -6,6 +6,7 @@ catalog, and delegates to a function elsewhere. Keep business logic out.
 
 from __future__ import annotations
 
+import csv
 import sys
 from enum import Enum
 from pathlib import Path
@@ -301,6 +302,104 @@ def vendors_show(slug: str) -> None:
                 "[green]✓[/green]" if r["enabled"] else "[dim]✗[/dim]",
             )
         console.print(t)
+
+
+@vendors_app.command("domains")
+def vendors_domains(
+    slug: Annotated[str, typer.Argument(help="Vendor slug")],
+    limit: Annotated[
+        int | None,
+        typer.Option("--limit", "-n", help="Cap the number of domains"),
+    ] = None,
+    since: Annotated[
+        str | None,
+        typer.Option(
+            "--since",
+            help="Only domains last seen at or after this ISO timestamp",
+        ),
+    ] = None,
+    output_format: Annotated[
+        OutputFormat,
+        typer.Option("--format", "-o", help="table, json or csv"),
+    ] = OutputFormat.table,
+) -> None:
+    """List the scanned domains observed using a vendor.
+
+    The inverse of `report`: instead of "what does this company use?",
+    answers "who uses this vendor?" — across everything scanned so far.
+    """
+    settings = get_settings()
+    with open_db(settings.db_path) as conn:
+        vendor = repo.get_vendor_by_slug(conn, slug)
+        if vendor is None:
+            err_console.print(f"[red]No vendor with slug {slug!r}[/red]")
+            raise typer.Exit(2)
+        rows = repo.domains_for_vendor(
+            conn, slug, limit=limit, since=since
+        )
+
+    if output_format is OutputFormat.table:
+        table = Table(
+            title=f"Domains using {vendor['name']} ({len(rows)})"
+        )
+        table.add_column("Domain", style="bold")
+        table.add_column("First seen")
+        table.add_column("Last seen")
+        table.add_column("Times seen", justify="right")
+        for r in rows:
+            table.add_row(
+                r["domain_normalized"],
+                r["first_seen"][:16].replace("T", " "),
+                r["last_seen"][:16].replace("T", " "),
+                str(r["detection_count"]),
+            )
+        console.print(table)
+        if not rows:
+            console.print(
+                f"[dim]Nothing scanned yet uses {vendor['name']}.[/dim]"
+            )
+        return
+
+    records = [
+        {
+            "domain": r["domain_normalized"],
+            "first_seen": r["first_seen"],
+            "last_seen": r["last_seen"],
+            "detection_count": r["detection_count"],
+        }
+        for r in rows
+    ]
+    if output_format is OutputFormat.json:
+        sys.stdout.write(
+            payload_to_json(
+                {
+                    "schema_version": SCHEMA_VERSION,
+                    "tool": {
+                        "name": "site-b2b-intel",
+                        "version": __version__,
+                    },
+                    "vendor": {
+                        "slug": vendor["slug"],
+                        "name": vendor["name"],
+                        "category": vendor["category"],
+                    },
+                    "domains": records,
+                }
+            )
+            + "\n"
+        )
+    else:
+        writer = csv.DictWriter(
+            sys.stdout,
+            fieldnames=[
+                "domain",
+                "first_seen",
+                "last_seen",
+                "detection_count",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(records)
 
 
 @rules_app.command("list")
