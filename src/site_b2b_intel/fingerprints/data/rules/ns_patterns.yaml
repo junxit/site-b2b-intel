@@ -1,0 +1,14 @@
+# Authoritative NS records.
+
+rules:
+  - vendor: cloudflare
+    record_type: NS
+    match_kind: suffix
+    pattern: ".ns.cloudflare.com"
+    confidence: high
+
+  - vendor: route53
+    record_type: NS
+    match_kind: regex
+    pattern: "\\.awsdns-\\d+\\.(com|net|org|co\\.uk)$"
+    confidence: high

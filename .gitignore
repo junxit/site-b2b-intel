@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+.installed.cfg
+
+# Environments
+.venv/
+venv/
+env/
+.python-version
+
+# uv
+uv.lock.tmp
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.cache
+
+# Editors / tooling
+.claude/
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Local DB / data
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+# Anchored: a top-level scratch dir only. An unanchored `data/` would also
+# match src/site_b2b_intel/fingerprints/data/ and silently drop the entire
+# fingerprint catalog from the package.
+/data/
+.b2b-intel/
+
+# Secrets
+.env
+.env.local
+.env.*.local

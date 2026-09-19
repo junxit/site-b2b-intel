@@ -1,0 +1,63 @@
+# SPF include / redirect targets parsed out of v=spf1 records.
+# The matcher receives ParsedRecord(record_type='SPF', value=<target host>).
+
+rules:
+  - vendor: google-workspace
+    record_type: SPF
+    match_kind: exact
+    pattern: "_spf.google.com"
+    confidence: high
+
+  - vendor: microsoft-365
+    record_type: SPF
+    match_kind: exact
+    pattern: "spf.protection.outlook.com"
+    confidence: high
+
+  - vendor: mailgun
+    record_type: SPF
+    match_kind: contains
+    pattern: "mailgun.org"
+    confidence: high
+
+  - vendor: sendgrid
+    record_type: SPF
+    match_kind: contains
+    pattern: "sendgrid.net"
+    confidence: high
+
+  - vendor: mailchimp
+    record_type: SPF
+    match_kind: contains
+    pattern: "mandrillapp.com"
+    confidence: high
+
+  - vendor: mailchimp
+    record_type: SPF
+    match_kind: contains
+    pattern: "mcsv.net"
+    confidence: high
+
+  - vendor: salesforce
+    record_type: SPF
+    match_kind: contains
+    pattern: "_spf.salesforce.com"
+    confidence: high
+
+  - vendor: aws-ses
+    record_type: SPF
+    match_kind: contains
+    pattern: "amazonses.com"
+    confidence: high
+
+  - vendor: hubspot
+    record_type: SPF
+    match_kind: contains
+    pattern: "_spf.hubspotemail.net"
+    confidence: high
+
+  - vendor: zendesk
+    record_type: SPF
+    match_kind: contains
+    pattern: "mail.zendesk.com"
+    confidence: high

@@ -1,0 +1,6 @@
+# CAA issuer rules. The parser emits ParsedRecord(record_type='CAA',
+# value=<issuer domain>) for each `issue` directive in a CAA record.
+# Skipped at MVP — CA vendors (Let's Encrypt, DigiCert, etc.) aren't in the
+# seed catalog. Re-enable by adding vendor entries and rules here.
+
+rules: []

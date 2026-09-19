@@ -1,0 +1,178 @@
+# Vendor catalog. Each entry has a stable `slug`, a display `name`, a
+# `category`, and an optional `profile` block.
+# Edit and run `b2b-intel reseed` to push changes into the DB.
+#
+# PROFILE DATA POLICY
+# -------------------
+# The shipped seed carries only `website` (stable and trivially verifiable)
+# and, where it is a settled fact, `headquarters`. Support/sales mailboxes
+# and phone numbers are deliberately NOT shipped: most vendors route support
+# through authenticated ticket portals rather than public mailboxes, and any
+# number bundled here would rot silently and be wrong in a way users could
+# not detect.
+#
+# The `vendor_profile` table still carries support_email / sales_email /
+# phone columns, and they are versioned over time — populate them from your
+# own verified sources via the DB, not from this file.
+#
+# `source: unverified` marks every profile below as best-effort reference
+# data, not human-verified fact.
+
+vendors:
+  - slug: google-workspace
+    name: Google Workspace
+    category: productivity
+    profile:
+      website: https://workspace.google.com
+      headquarters: "Mountain View, CA, USA"
+      source: unverified
+
+  - slug: microsoft-365
+    name: Microsoft 365
+    category: productivity
+    profile:
+      website: https://www.microsoft.com/microsoft-365
+      headquarters: "Redmond, WA, USA"
+      source: unverified
+
+  - slug: cloudflare
+    name: Cloudflare
+    category: cdn
+    profile:
+      website: https://www.cloudflare.com
+      headquarters: "San Francisco, CA, USA"
+      source: unverified
+
+  - slug: route53
+    name: AWS Route 53
+    category: dns
+    profile:
+      website: https://aws.amazon.com/route53/
+      headquarters: "Seattle, WA, USA"
+      source: unverified
+
+  - slug: aws-ses
+    name: AWS Simple Email Service
+    category: email-api
+    profile:
+      website: https://aws.amazon.com/ses/
+      headquarters: "Seattle, WA, USA"
+      source: unverified
+
+  - slug: mailgun
+    name: Mailgun (Sinch)
+    category: email-api
+    profile:
+      website: https://www.mailgun.com
+      source: unverified
+
+  - slug: sendgrid
+    name: SendGrid (Twilio)
+    category: email-api
+    profile:
+      website: https://sendgrid.com
+      source: unverified
+
+  - slug: mailchimp
+    name: Mailchimp (Intuit)
+    category: marketing
+    profile:
+      website: https://mailchimp.com
+      headquarters: "Atlanta, GA, USA"
+      source: unverified
+
+  - slug: stripe
+    name: Stripe
+    category: payments
+    profile:
+      website: https://stripe.com
+      headquarters: "South San Francisco, CA, USA / Dublin, Ireland"
+      source: unverified
+
+  - slug: docusign
+    name: DocuSign
+    category: esign
+    profile:
+      website: https://www.docusign.com
+      headquarters: "San Francisco, CA, USA"
+      source: unverified
+
+  - slug: hubspot
+    name: HubSpot
+    category: marketing
+    profile:
+      website: https://www.hubspot.com
+      headquarters: "Cambridge, MA, USA"
+      source: unverified
+
+  - slug: salesforce
+    name: Salesforce
+    category: crm
+    profile:
+      website: https://www.salesforce.com
+      headquarters: "San Francisco, CA, USA"
+      source: unverified
+
+  - slug: shopify
+    name: Shopify
+    category: commerce
+    profile:
+      website: https://www.shopify.com
+      headquarters: "Ottawa, ON, Canada"
+      source: unverified
+
+  - slug: atlassian
+    name: Atlassian
+    category: dev-collab
+    profile:
+      website: https://www.atlassian.com
+      headquarters: "Sydney, NSW, Australia"
+      source: unverified
+
+  - slug: facebook
+    name: Meta (Facebook)
+    category: social
+    profile:
+      website: https://www.facebook.com
+      headquarters: "Menlo Park, CA, USA"
+      source: unverified
+
+  - slug: apple
+    name: Apple
+    category: identity
+    profile:
+      website: https://www.apple.com
+      headquarters: "Cupertino, CA, USA"
+      source: unverified
+
+  - slug: pinterest
+    name: Pinterest
+    category: social
+    profile:
+      website: https://www.pinterest.com
+      headquarters: "San Francisco, CA, USA"
+      source: unverified
+
+  - slug: adobe
+    name: Adobe
+    category: marketing
+    profile:
+      website: https://www.adobe.com
+      headquarters: "San Jose, CA, USA"
+      source: unverified
+
+  - slug: zendesk
+    name: Zendesk
+    category: support
+    profile:
+      website: https://www.zendesk.com
+      headquarters: "San Francisco, CA, USA"
+      source: unverified
+
+  - slug: intercom
+    name: Intercom
+    category: support
+    profile:
+      website: https://www.intercom.com
+      headquarters: "San Francisco, CA, USA"
+      source: unverified

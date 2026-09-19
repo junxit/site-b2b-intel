@@ -1,0 +1,87 @@
+# TXT verification tokens at the apex.
+# Format: each rule has vendor (slug), record_type, match_kind, pattern, confidence.
+
+rules:
+  - vendor: google-workspace
+    record_type: TXT
+    match_kind: prefix
+    pattern: "google-site-verification="
+    confidence: high
+
+  - vendor: microsoft-365
+    record_type: TXT
+    match_kind: prefix
+    pattern: "MS="
+    confidence: high
+
+  - vendor: docusign
+    record_type: TXT
+    match_kind: prefix
+    pattern: "docusign="
+    confidence: high
+
+  - vendor: docusign
+    record_type: TXT
+    match_kind: prefix
+    pattern: "docusign-verification="
+    confidence: high
+
+  - vendor: atlassian
+    record_type: TXT
+    match_kind: prefix
+    pattern: "atlassian-domain-verification="
+    confidence: high
+
+  - vendor: facebook
+    record_type: TXT
+    match_kind: prefix
+    pattern: "facebook-domain-verification="
+    confidence: high
+
+  - vendor: apple
+    record_type: TXT
+    match_kind: prefix
+    pattern: "apple-domain-verification="
+    confidence: high
+
+  - vendor: stripe
+    record_type: TXT
+    match_kind: prefix
+    pattern: "stripe-verification="
+    confidence: high
+
+  - vendor: pinterest
+    record_type: TXT
+    match_kind: prefix
+    pattern: "pinterest-site-verification="
+    confidence: high
+
+  - vendor: adobe
+    record_type: TXT
+    match_kind: prefix
+    pattern: "adobe-idp-site-verification="
+    confidence: high
+
+  - vendor: adobe
+    record_type: TXT
+    match_kind: prefix
+    pattern: "adobe-sign-verification="
+    confidence: high
+
+  - vendor: shopify
+    record_type: TXT
+    match_kind: prefix
+    pattern: "shopify-verification-code="
+    confidence: high
+
+  - vendor: hubspot
+    record_type: TXT
+    match_kind: prefix
+    pattern: "hubspot-developer-verification="
+    confidence: medium
+
+  - vendor: salesforce
+    record_type: TXT
+    match_kind: prefix
+    pattern: "salesforce-verification="
+    confidence: medium

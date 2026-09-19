@@ -1,0 +1,10 @@
+# AWS SES domain verification token at _amazonses.<domain>.
+# Any TXT record at this name indicates AWS SES domain verification.
+# ParsedRecord(record_type='AWSSES_VERIFY', value='present').
+
+rules:
+  - vendor: aws-ses
+    record_type: AWSSES_VERIFY
+    match_kind: exact
+    pattern: "present"
+    confidence: high

@@ -1,0 +1,6 @@
+# CNAME target suffix matches. The scanner records CNAMEs encountered when
+# resolving the apex (e.g. Cloudflare flattening) or probed subdomains.
+# Skipped at MVP — CNAME-based detection requires probing specific
+# subdomains, which isn't in the apex-only resolver pass.
+
+rules: []

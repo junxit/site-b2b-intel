@@ -1,0 +1,33 @@
+# MX exchange host suffix matches.
+# Value of an MX ParsedRecord is the exchange host without the priority.
+
+rules:
+  - vendor: google-workspace
+    record_type: MX
+    match_kind: suffix
+    pattern: "aspmx.l.google.com"
+    confidence: high
+
+  - vendor: google-workspace
+    record_type: MX
+    match_kind: suffix
+    pattern: ".googlemail.com"
+    confidence: high
+
+  - vendor: microsoft-365
+    record_type: MX
+    match_kind: suffix
+    pattern: ".mail.protection.outlook.com"
+    confidence: high
+
+  - vendor: mailgun
+    record_type: MX
+    match_kind: suffix
+    pattern: ".mailgun.org"
+    confidence: high
+
+  - vendor: sendgrid
+    record_type: MX
+    match_kind: suffix
+    pattern: ".sendgrid.net"
+    confidence: high

@@ -1,0 +1,9 @@
+0.1.0 — initial scaffold
+- Project skeleton (src layout, pyproject.toml, uv, hatchling)
+- SQLite schema for vendors, fingerprint rules, scans, detections, observations
+- DNS resolver wrapper around dnspython
+- Fingerprint catalog loader (YAML → Pydantic)
+- Matcher engine for prefix/suffix/contains/exact/regex rules
+- Scanner orchestrates resolve → parse → match → persist
+- CLI: init, scan, report, vendors, rules, reseed
+- Seed catalog of ~20 SaaS vendors across TXT, MX, NS, SPF, DKIM, DMARC, CAA, CNAME signals

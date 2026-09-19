@@ -1,0 +1,13 @@
+# DMARC rua= mailbox domains — identify DMARC-as-a-service vendors.
+# The DMARC parser emits ParsedRecord(record_type='DMARC_RUA',
+# value=<mailbox domain>). No vendors are seeded here at MVP; add as needed.
+# Example (uncomment and add a 'postmark' vendor entry to vendors.yaml):
+#
+# rules:
+#   - vendor: postmark
+#     record_type: DMARC_RUA
+#     match_kind: contains
+#     pattern: "postmarkapp.com"
+#     confidence: high
+
+rules: []

@@ -1,0 +1,57 @@
+# DKIM selectors observed at <selector>._domainkey.<domain>.
+# ParsedRecord(record_type='DKIM_SELECTOR', value=<selector name>).
+
+rules:
+  - vendor: google-workspace
+    record_type: DKIM_SELECTOR
+    match_kind: exact
+    pattern: "google"
+    confidence: high
+
+  - vendor: microsoft-365
+    record_type: DKIM_SELECTOR
+    match_kind: exact
+    pattern: "selector1"
+    confidence: medium
+
+  - vendor: microsoft-365
+    record_type: DKIM_SELECTOR
+    match_kind: exact
+    pattern: "selector2"
+    confidence: medium
+
+  - vendor: mailchimp
+    record_type: DKIM_SELECTOR
+    match_kind: exact
+    pattern: "k1"
+    confidence: high
+
+  - vendor: mailchimp
+    record_type: DKIM_SELECTOR
+    match_kind: exact
+    pattern: "k2"
+    confidence: high
+
+  - vendor: mailchimp
+    record_type: DKIM_SELECTOR
+    match_kind: exact
+    pattern: "mandrill"
+    confidence: high
+
+  - vendor: sendgrid
+    record_type: DKIM_SELECTOR
+    match_kind: exact
+    pattern: "s1"
+    confidence: medium
+
+  - vendor: sendgrid
+    record_type: DKIM_SELECTOR
+    match_kind: exact
+    pattern: "s2"
+    confidence: medium
+
+  - vendor: sendgrid
+    record_type: DKIM_SELECTOR
+    match_kind: exact
+    pattern: "smtpapi"
+    confidence: high
