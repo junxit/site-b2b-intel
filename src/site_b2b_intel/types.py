@@ -62,6 +62,16 @@ class Confidence(str, Enum):
     MEDIUM = "medium"
     HIGH = "high"
 
+    @property
+    def rank(self) -> int:
+        """Sortable strength, 0 (low) to 2 (high).
+
+        Used to roll several signals up into one headline confidence for a
+        vendor: a vendor confirmed by both an MX record and a DKIM selector
+        should report the stronger of the two, not whichever sorted first.
+        """
+        return {"low": 0, "medium": 1, "high": 2}[self.value]
+
 
 class ScanFlag:
     """Bit flags packed into `scan.flags`."""
@@ -69,6 +79,36 @@ class ScanFlag:
     NO_MX = 1 << 0
     WILDCARD_SUSPECTED = 1 << 1
     DNSSEC_FAIL = 1 << 2
+
+    @classmethod
+    def names(cls, flags: int) -> list[str]:
+        """Decode a flags bitfield into its set flag names.
+
+        Serialized output carries these names rather than the integer —
+        the bitfield is an internal storage detail, and an API consumer
+        should never have to know that ``2`` means WILDCARD_SUSPECTED.
+
+        Args:
+            flags: The packed ``scan.flags`` value.
+
+        Returns:
+            Names of the set flags, in bit order.
+
+        Examples:
+            >>> ScanFlag.names(0)
+            []
+            >>> ScanFlag.names(ScanFlag.NO_MX)
+            ['NO_MX']
+        """
+        return [
+            name
+            for name, bit in (
+                ("NO_MX", cls.NO_MX),
+                ("WILDCARD_SUSPECTED", cls.WILDCARD_SUSPECTED),
+                ("DNSSEC_FAIL", cls.DNSSEC_FAIL),
+            )
+            if flags & bit
+        ]
 
 
 @dataclass(frozen=True, slots=True)

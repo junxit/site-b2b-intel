@@ -370,6 +370,64 @@ def latest_scan_for(
     ).fetchone()
 
 
+def get_scan(conn: sqlite3.Connection, scan_id: int) -> sqlite3.Row | None:
+    """Fetch one scan row by id."""
+    return conn.execute(
+        "SELECT * FROM scan WHERE id = ?", (scan_id,)
+    ).fetchone()
+
+
+def detections_for_scan_raw(
+    conn: sqlite3.Connection, scan_id: int
+) -> list[sqlite3.Row]:
+    """Detections for a scan, one row each, joined to vendor and rule.
+
+    Unlike :func:`detections_for_scan` this does not collapse evidence with
+    GROUP_CONCAT, so structured output can nest evidence properly instead
+    of re-splitting a delimited string.
+    """
+    return conn.execute(
+        """
+        SELECT
+            d.id AS detection_id,
+            d.confidence,
+            v.slug AS vendor_slug,
+            v.name AS vendor_name,
+            v.category AS vendor_category,
+            r.record_type,
+            r.match_kind,
+            r.pattern
+        FROM detection d
+        JOIN vendor v ON v.id = d.vendor_id
+        JOIN fingerprint_rule r ON r.id = d.rule_id
+        WHERE d.scan_id = ?
+        ORDER BY v.name, r.record_type, r.pattern
+        """,
+        (scan_id,),
+    ).fetchall()
+
+
+def detection_evidence_for_scan(
+    conn: sqlite3.Connection, scan_id: int
+) -> list[sqlite3.Row]:
+    """Every evidence record for a scan's detections, one row per record."""
+    return conn.execute(
+        """
+        SELECT
+            de.detection_id,
+            rec.record_type,
+            rec.name,
+            rec.value
+        FROM detection_evidence de
+        JOIN detection d ON d.id = de.detection_id
+        JOIN dns_record rec ON rec.id = de.dns_record_id
+        WHERE d.scan_id = ?
+        ORDER BY de.detection_id, rec.name, rec.value
+        """,
+        (scan_id,),
+    ).fetchall()
+
+
 def detections_for_scan(
     conn: sqlite3.Connection, scan_id: int
 ) -> list[sqlite3.Row]:

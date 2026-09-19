@@ -6,19 +6,30 @@ catalog, and delegates to a function elsewhere. Keep business logic out.
 
 from __future__ import annotations
 
+import sys
+from enum import Enum
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
+from site_b2b_intel import __version__
 from site_b2b_intel.config import get_settings
 from site_b2b_intel.db import repository as repo
 from site_b2b_intel.db.connection import open_db
 from site_b2b_intel.fingerprints.catalog import load_catalog, seed_catalog
 from site_b2b_intel.normalize import to_registrable_domain
-from site_b2b_intel.reports.domain import render_domain_report
+from site_b2b_intel.reports.domain import render_payload
+from site_b2b_intel.reports.serialize import (
+    SCHEMA_VERSION,
+    domain_payload,
+    payload_to_csv_rows,
+    payload_to_json,
+    scan_payload,
+    write_csv,
+)
 from site_b2b_intel.resolve.resolver import DnsResolver
 from site_b2b_intel.scan.scanner import scan_domain
 
@@ -32,6 +43,17 @@ app.add_typer(vendors_app, name="vendors")
 app.add_typer(rules_app, name="rules")
 
 console = Console()
+#: Progress and errors go here whenever stdout is carrying machine-readable
+#: output, so `b2b-intel scan x.com --format json | jq` is never polluted.
+err_console = Console(stderr=True)
+
+
+class OutputFormat(str, Enum):
+    """How to render results on stdout."""
+
+    table = "table"
+    json = "json"
+    csv = "csv"
 
 
 def _make_resolver() -> DnsResolver:
@@ -78,6 +100,25 @@ def scan(
             ),
         ),
     ] = False,
+    output_format: Annotated[
+        OutputFormat,
+        typer.Option(
+            "--format",
+            "-o",
+            help="table for humans; json or csv for pipelines",
+        ),
+    ] = OutputFormat.table,
+    include_records: Annotated[
+        bool,
+        typer.Option(
+            "--include-records",
+            help=(
+                "Include every raw DNS record in JSON output. Roughly "
+                "triples payload size; useful when auditing why a "
+                "detection fired."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Scan one domain (or a file of domains)."""
     targets = _resolve_targets(domain, file)
@@ -85,7 +126,10 @@ def scan(
     catalog = load_catalog()
     resolver = _make_resolver()
     probes: tuple[str, ...] | None = () if no_probe else None
+    # Keep stdout clean for anything machine-readable.
+    status = console if output_format is OutputFormat.table else err_console
 
+    payloads: list[dict[str, Any]] = []
     with open_db(settings.db_path) as conn:
         for tgt in targets:
             try:
@@ -93,13 +137,39 @@ def scan(
                     conn, resolver, catalog, tgt, cname_probes=probes
                 )
             except Exception as exc:  # noqa: BLE001
-                console.print(f"[red]✗[/red] {tgt}: {exc}")
+                status.print(f"[red]✗[/red] {tgt}: {exc}")
                 continue
-            n_dets = len(repo.detections_for_scan(conn, scan_id))
-            console.print(
-                f"[green]✓[/green] {tgt} → {n_dets} detections "
-                f"(scan #{scan_id})"
+            payload = scan_payload(
+                conn, scan_id, include_records=include_records
             )
+            payloads.append(payload)
+            status.print(
+                f"[green]✓[/green] {tgt} → {len(payload['vendors'])} "
+                f"vendors (scan #{scan_id})"
+            )
+
+    if output_format is OutputFormat.table:
+        for payload in payloads:
+            render_payload(payload, console=console)
+    elif output_format is OutputFormat.json:
+        # Always the same envelope, single domain or batch, so consumers
+        # never have to branch on cardinality.
+        sys.stdout.write(
+            payload_to_json(
+                {
+                    "schema_version": SCHEMA_VERSION,
+                    "tool": {
+                        "name": "site-b2b-intel",
+                        "version": __version__,
+                    },
+                    "results": payloads,
+                }
+            )
+            + "\n"
+        )
+    else:
+        rows = [r for p in payloads for r in payload_to_csv_rows(p)]
+        write_csv(rows, sys.stdout)
 
 
 def _resolve_targets(domain: str, file: Path | None) -> list[str]:
@@ -123,12 +193,36 @@ def report(
     domain: Annotated[
         str, typer.Argument(help="Domain (URL/email also accepted)")
     ],
+    output_format: Annotated[
+        OutputFormat,
+        typer.Option(
+            "--format",
+            "-o",
+            help="table for humans; json or csv for pipelines",
+        ),
+    ] = OutputFormat.table,
+    include_records: Annotated[
+        bool,
+        typer.Option(
+            "--include-records",
+            help="Include every raw DNS record in JSON output",
+        ),
+    ] = False,
 ) -> None:
     """Show the most recent scan + first/last-seen for a domain."""
     settings = get_settings()
     normalized = to_registrable_domain(domain)
     with open_db(settings.db_path) as conn:
-        render_domain_report(conn, normalized, console=console)
+        payload = domain_payload(
+            conn, normalized, include_records=include_records
+        )
+
+    if output_format is OutputFormat.table:
+        render_payload(payload, console=console)
+    elif output_format is OutputFormat.json:
+        sys.stdout.write(payload_to_json(payload) + "\n")
+    else:
+        write_csv(payload_to_csv_rows(payload), sys.stdout)
 
 
 @app.command()
