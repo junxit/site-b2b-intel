@@ -1,10 +1,23 @@
 # Sample scans — first research pass
 
-Scans run 2026-05-26 against the seed domain set. All signals are
-DNS-only — no HTTP, no JS, no scraping. Each row's "signals" are the
-fingerprint rule patterns that fired in this scan.
+> **These results are a snapshot from 2026-05-26 and are not maintained.**
+> They were produced by the 0.1.0 catalog (20 vendors, 41 rules), before
+> CAA, CNAME and DMARC-vendor detection existed — a scan run today returns
+> considerably more. DNS changes constantly, so treat every line below as
+> "what these domains published on that date", not as current fact.
+>
+> Reproduce rather than cite: `b2b-intel scan <domain>`.
 
-## Aggregate — vendor adoption across the 6 seed domains
+**Method.** Every value is derived from public DNS records — TXT, MX, NS,
+SPF and DKIM — read from a public recursive resolver. No HTTP requests, no
+page scraping, no JavaScript execution, no authenticated access. Each
+"signals" entry is the fingerprint rule pattern that matched.
+
+## Counts across this 6-domain sample
+
+Six hand-picked domains is a sample, not a market. These counts describe
+only the table below and say nothing about vendor market share — do not
+cite them as adoption statistics.
 
 | Vendor | Category | Domains where detected |
 |---|---|---|

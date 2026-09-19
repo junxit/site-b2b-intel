@@ -1,9 +1,42 @@
-0.1.0 — initial scaffold
+0.2.0 — detection coverage, machine-readable output, first public release
+- CAA issuer detection: parse issue/issuewild into the authorized CA
+  (iodef correctly ignored; ";" means no issuance and yields nothing)
+- CNAME subdomain probing across 15 common SaaS labels, on by default,
+  --no-probe to skip. Per-probe NXDOMAIN handling so one dead CNAME
+  cannot abort a scan
+- DMARC reporting-vendor detection. The scanner had always emitted
+  DMARC_RUA records; nothing consumed them until now
+- Catalog grows from 20 vendors / 41 rules to 50 vendors / 106 rules,
+  adding certificate authorities, DMARC processors, email security and
+  DNS providers, and hosted products. Every pattern verified against
+  live DNS
+- JSON and CSV output on scan, report and vendors domains. Versioned
+  payload; progress moves to stderr so stdout stays pipeable
+- vendors domains <slug>: reverse lookup, which domains use a vendor
+- rules validate: catches undetectable vendors, duplicate rules, and
+  under-anchored suffix patterns
+- Record-type vocabulary corrected and validated at catalog load; bad
+  record_type or match_kind now fails loudly instead of silently never
+  matching
+- Fixed a .gitignore rule that would have excluded the entire
+  fingerprint catalog from the package
+- Unverified vendor contact data removed from the shipped seed
+- Documentation corrected: the README previously advertised CAA, CNAME
+  and DMARC-vendor detection that shipped as empty rule files, named MX
+  and NS providers that did not exist in the catalog, and described a
+  test-fixture mechanism that was never built
+
+0.1.0 — initial build
 - Project skeleton (src layout, pyproject.toml, uv, hatchling)
-- SQLite schema for vendors, fingerprint rules, scans, detections, observations
-- DNS resolver wrapper around dnspython
-- Fingerprint catalog loader (YAML → Pydantic)
-- Matcher engine for prefix/suffix/contains/exact/regex rules
-- Scanner orchestrates resolve → parse → match → persist
+- SQLite schema for vendors, fingerprint rules, scans, detections and
+  first-seen/last-seen observations
+- DNS resolver wrapper over dnspython with upstream failover and
+  per-upstream rate limiting
+- Fingerprint catalog loader (YAML to Pydantic) with idempotent seeding
+  and soft-delete of removed rules
+- Matcher supporting prefix, suffix, contains, exact and regex rules
+- Scanner orchestrating resolve, parse, match and persist in one
+  transaction
 - CLI: init, scan, report, vendors, rules, reseed
-- Seed catalog of ~20 SaaS vendors across TXT, MX, NS, SPF, DKIM, DMARC, CAA, CNAME signals
+- Seed catalog of 20 SaaS vendors across TXT, MX, NS, SPF and DKIM
+  signals
