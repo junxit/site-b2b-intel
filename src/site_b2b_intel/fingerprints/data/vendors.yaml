@@ -176,3 +176,226 @@ vendors:
       website: https://www.intercom.com
       headquarters: "San Francisco, CA, USA"
       source: unverified
+
+  # --- Certificate authorities (detected via CAA issue/issuewild) ---
+
+  - slug: letsencrypt
+    name: Let's Encrypt (ISRG)
+    category: certificate-authority
+    profile:
+      website: https://letsencrypt.org
+      source: unverified
+
+  - slug: digicert
+    name: DigiCert
+    category: certificate-authority
+    profile:
+      website: https://www.digicert.com
+      source: unverified
+
+  - slug: sectigo
+    name: Sectigo
+    category: certificate-authority
+    profile:
+      website: https://www.sectigo.com
+      source: unverified
+
+  - slug: globalsign
+    name: GlobalSign
+    category: certificate-authority
+    profile:
+      website: https://www.globalsign.com
+      source: unverified
+
+  - slug: google-trust-services
+    name: Google Trust Services
+    category: certificate-authority
+    profile:
+      website: https://pki.goog
+      source: unverified
+
+  - slug: amazon-trust
+    name: Amazon Trust Services
+    category: certificate-authority
+    profile:
+      website: https://www.amazontrust.com
+      source: unverified
+
+  - slug: ssl-com
+    name: SSL.com
+    category: certificate-authority
+    profile:
+      website: https://www.ssl.com
+      source: unverified
+
+  # --- DMARC aggregate-report processors (detected via rua= mailbox) ---
+
+  - slug: agari
+    name: Agari (Fortra)
+    category: dmarc
+    profile:
+      website: https://www.fortra.com
+      source: unverified
+
+  - slug: valimail
+    name: Valimail
+    category: dmarc
+    profile:
+      website: https://www.valimail.com
+      source: unverified
+
+  - slug: dmarcian
+    name: dmarcian
+    category: dmarc
+    profile:
+      website: https://dmarcian.com
+      source: unverified
+
+  - slug: emailanalyst
+    name: EmailAnalyst
+    category: dmarc
+    profile:
+      website: https://www.emailanalyst.com
+      source: unverified
+
+  - slug: redsift-ondmarc
+    name: Red Sift OnDMARC
+    category: dmarc
+    profile:
+      website: https://redsift.com
+      source: unverified
+
+  - slug: easydmarc
+    name: EasyDMARC
+    category: dmarc
+    profile:
+      website: https://easydmarc.com
+      source: unverified
+
+  - slug: validity-everest
+    name: Validity Everest
+    category: dmarc
+    profile:
+      website: https://www.validity.com
+      source: unverified
+
+  # --- Email security / hosting ---
+
+  - slug: proofpoint
+    name: Proofpoint
+    category: email-security
+    profile:
+      website: https://www.proofpoint.com
+      source: unverified
+
+  - slug: mimecast
+    name: Mimecast
+    category: email-security
+    profile:
+      website: https://www.mimecast.com
+      source: unverified
+
+  - slug: fastmail
+    name: Fastmail
+    category: email
+    profile:
+      website: https://www.fastmail.com
+      headquarters: "Melbourne, VIC, Australia"
+      source: unverified
+
+  - slug: protonmail
+    name: Proton Mail
+    category: email
+    profile:
+      website: https://proton.me
+      headquarters: "Geneva, Switzerland"
+      source: unverified
+
+  - slug: zoho
+    name: Zoho
+    category: email
+    profile:
+      website: https://www.zoho.com
+      source: unverified
+
+  # --- DNS / CDN providers ---
+
+  - slug: akamai
+    name: Akamai
+    category: cdn
+    profile:
+      website: https://www.akamai.com
+      headquarters: "Cambridge, MA, USA"
+      source: unverified
+
+  - slug: ns1
+    name: NS1 (IBM)
+    category: dns
+    profile:
+      website: https://www.ibm.com/products/ns1-connect
+      source: unverified
+
+  - slug: google-cloud-dns
+    name: Google Cloud DNS
+    category: dns
+    profile:
+      website: https://cloud.google.com/dns
+      source: unverified
+
+  - slug: azure-dns
+    name: Azure DNS
+    category: dns
+    profile:
+      website: https://azure.microsoft.com/products/dns
+      source: unverified
+
+  - slug: dnsimple
+    name: DNSimple
+    category: dns
+    profile:
+      website: https://dnsimple.com
+      source: unverified
+
+  # --- Hosted products (detected via CNAME on a probed subdomain) ---
+
+  - slug: statuspage
+    name: Atlassian Statuspage
+    category: status-page
+    profile:
+      website: https://www.atlassian.com/software/statuspage
+      source: unverified
+
+  - slug: vercel
+    name: Vercel
+    category: hosting
+    profile:
+      website: https://vercel.com
+      source: unverified
+
+  - slug: netlify
+    name: Netlify
+    category: hosting
+    profile:
+      website: https://www.netlify.com
+      source: unverified
+
+  - slug: greenhouse
+    name: Greenhouse
+    category: recruiting
+    profile:
+      website: https://www.greenhouse.io
+      source: unverified
+
+  - slug: marketo
+    name: Marketo (Adobe)
+    category: marketing
+    profile:
+      website: https://business.adobe.com/products/marketo/adobe-marketo.html
+      source: unverified
+
+  - slug: campaign-monitor
+    name: Campaign Monitor
+    category: marketing
+    profile:
+      website: https://www.campaignmonitor.com
+      source: unverified

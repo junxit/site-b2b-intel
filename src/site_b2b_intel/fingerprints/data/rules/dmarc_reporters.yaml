@@ -1,13 +1,98 @@
-# DMARC rua= mailbox domains — identify DMARC-as-a-service vendors.
-# The DMARC parser emits ParsedRecord(record_type='DMARC_RUA',
-# value=<mailbox domain>). No vendors are seeded here at MVP; add as needed.
-# Example (uncomment and add a 'postmark' vendor entry to vendors.yaml):
+# DMARC aggregate-report processors, detected from the `rua=` mailbox domain.
 #
-# rules:
-#   - vendor: postmark
-#     record_type: DMARC_RUA
-#     match_kind: contains
-#     pattern: "postmarkapp.com"
-#     confidence: high
+# The scanner already emits DMARC_RUA records (value = the mailbox domain);
+# before this file existed they had no consumers.
+#
+# Suffix rules carry a LEADING DOT and are paired with an `exact` rule for
+# the apex. Bare `suffix: dmarcian.com` would also match `notdmarcian.com`.
+#
+# Every pattern was read off a live _dmarc record. Two would have been wrong
+# from memory: Valimail reports to `vali.email` (not valimail.com) and
+# EasyDMARC to `rua.easydmarc.us` (not easydmarc.com).
 
-rules: []
+rules:
+  # Observed: paypal.com, ebay.com, linkedin.com, adobe.com, squarespace.com
+  - vendor: agari
+    record_type: DMARC_RUA
+    match_kind: suffix
+    pattern: ".agari.com"
+    confidence: high
+
+  - vendor: agari
+    record_type: DMARC_RUA
+    match_kind: exact
+    pattern: "agari.com"
+    confidence: high
+
+  # Observed: paypal.com, salesforce.com, mozilla.org, nytimes.com, bbc.co.uk
+  - vendor: valimail
+    record_type: DMARC_RUA
+    match_kind: exact
+    pattern: "vali.email"
+    confidence: high
+
+  - vendor: valimail
+    record_type: DMARC_RUA
+    match_kind: suffix
+    pattern: ".vali.email"
+    confidence: high
+
+  # Observed: cisco.com (ag.dmarcian.com), spotify.com (ag.eu.dmarcian.com)
+  - vendor: dmarcian
+    record_type: DMARC_RUA
+    match_kind: suffix
+    pattern: ".dmarcian.com"
+    confidence: high
+
+  - vendor: dmarcian
+    record_type: DMARC_RUA
+    match_kind: exact
+    pattern: "dmarcian.com"
+    confidence: high
+
+  # Observed: atlassian.com, zoom.us, oracle.com
+  - vendor: proofpoint
+    record_type: DMARC_RUA
+    match_kind: suffix
+    pattern: ".proofpoint.com"
+    confidence: high
+
+  # Observed: linkedin.com, dropbox.com
+  - vendor: emailanalyst
+    record_type: DMARC_RUA
+    match_kind: suffix
+    pattern: ".emailanalyst.com"
+    confidence: high
+
+  # Observed: salesforce.com
+  - vendor: redsift-ondmarc
+    record_type: DMARC_RUA
+    match_kind: suffix
+    pattern: ".ondmarc.com"
+    confidence: high
+
+  - vendor: redsift-ondmarc
+    record_type: DMARC_RUA
+    match_kind: exact
+    pattern: "ondmarc.com"
+    confidence: high
+
+  # Observed: asana.com
+  - vendor: easydmarc
+    record_type: DMARC_RUA
+    match_kind: suffix
+    pattern: ".easydmarc.us"
+    confidence: high
+
+  - vendor: easydmarc
+    record_type: DMARC_RUA
+    match_kind: suffix
+    pattern: ".easydmarc.com"
+    confidence: high
+
+  # Observed: asana.com
+  - vendor: validity-everest
+    record_type: DMARC_RUA
+    match_kind: suffix
+    pattern: ".everest.email"
+    confidence: high

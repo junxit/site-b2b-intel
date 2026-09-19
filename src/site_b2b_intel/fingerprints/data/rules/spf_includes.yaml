@@ -61,3 +61,40 @@ rules:
     match_kind: contains
     pattern: "mail.zendesk.com"
     confidence: high
+
+  # Observed: intercom.io SPF includes both of these
+  - vendor: campaign-monitor
+    record_type: SPF
+    match_kind: contains
+    pattern: "cmail1.com"
+    confidence: high
+
+  - vendor: statuspage
+    record_type: SPF
+    match_kind: contains
+    pattern: "stspg-customer.com"
+    confidence: high
+
+  - vendor: marketo
+    record_type: SPF
+    match_kind: contains
+    pattern: "mktomail.com"
+    confidence: high
+
+  - vendor: proofpoint
+    record_type: SPF
+    match_kind: contains
+    pattern: "pphosted.com"
+    confidence: high
+
+  - vendor: mimecast
+    record_type: SPF
+    match_kind: contains
+    pattern: "mimecast.com"
+    confidence: high
+
+  - vendor: zoho
+    record_type: SPF
+    match_kind: contains
+    pattern: "zoho.com"
+    confidence: medium

@@ -12,3 +12,95 @@ rules:
     match_kind: regex
     pattern: "\\.awsdns-\\d+\\.(com|net|org|co\\.uk)$"
     confidence: high
+
+  # Observed: nasa.gov, akamai.com -> a1-66.akam.net
+  - vendor: akamai
+    record_type: NS
+    match_kind: suffix
+    pattern: ".akam.net"
+    confidence: high
+
+  - vendor: akamai
+    record_type: NS
+    match_kind: suffix
+    pattern: ".akamaiedge.net"
+    confidence: high
+
+  # Observed: spotify.com, ns1.com -> dns1.p07.nsone.net
+  - vendor: ns1
+    record_type: NS
+    match_kind: suffix
+    pattern: ".nsone.net"
+    confidence: high
+
+  # Observed: spotify.com -> ns-cloud-a4.googledomains.com
+  - vendor: google-cloud-dns
+    record_type: NS
+    match_kind: suffix
+    pattern: ".googledomains.com"
+    confidence: high
+
+  # Observed: xbox.com, office.com, skype.com -> ns1-205.azure-dns.com
+  - vendor: azure-dns
+    record_type: NS
+    match_kind: suffix
+    pattern: ".azure-dns.com"
+    confidence: high
+
+  - vendor: azure-dns
+    record_type: NS
+    match_kind: suffix
+    pattern: ".azure-dns.net"
+    confidence: high
+
+  - vendor: azure-dns
+    record_type: NS
+    match_kind: suffix
+    pattern: ".azure-dns.org"
+    confidence: high
+
+  - vendor: azure-dns
+    record_type: NS
+    match_kind: suffix
+    pattern: ".azure-dns.info"
+    confidence: high
+
+  # Observed: dnsimple.com -> ns1.dnsimple-edge.com
+  - vendor: dnsimple
+    record_type: NS
+    match_kind: suffix
+    pattern: ".dnsimple-edge.com"
+    confidence: high
+
+  - vendor: dnsimple
+    record_type: NS
+    match_kind: suffix
+    pattern: ".dnsimple-edge.net"
+    confidence: high
+
+  - vendor: dnsimple
+    record_type: NS
+    match_kind: suffix
+    pattern: ".dnsimple.com"
+    confidence: high
+
+  # Observed: fastmail.com -> fmns1.messagingengine.com
+  - vendor: fastmail
+    record_type: NS
+    match_kind: suffix
+    pattern: ".messagingengine.com"
+    confidence: high
+
+  # Observed: zoho.com -> ns1.zohocorp.com
+  - vendor: zoho
+    record_type: NS
+    match_kind: suffix
+    pattern: ".zohocorp.com"
+    confidence: high
+
+  # Observed: protonmail.com -> ns1.protonmail.com
+  - vendor: protonmail
+    record_type: NS
+    match_kind: suffix
+    pattern: ".protonmail.com"
+    confidence: high

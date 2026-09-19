@@ -1,6 +1,103 @@
-# CNAME target suffix matches. The scanner records CNAMEs encountered when
-# resolving the apex (e.g. Cloudflare flattening) or probed subdomains.
-# Skipped at MVP — CNAME-based detection requires probing specific
-# subdomains, which isn't in the apex-only resolver pass.
+# CNAME target rules.
+#
+# The scanner probes a list of common SaaS subdomains (see
+# DEFAULT_CNAME_PROBES in resolve/resolver.py) and records any CNAME it
+# finds. A CNAME at `status.` or `help.` is unusually strong evidence —
+# far less ambiguous than an apex TXT token, which lingers long after a
+# product is decommissioned.
+#
+# Suffix rules carry a LEADING DOT and are paired with an `exact` rule for
+# the apex, so `.zendesk.com` cannot match `fakezendesk.com`.
+#
+# Every pattern was read off a live CNAME. The most important correction:
+# Statuspage customer records point at `stspg-customer.com`, NOT
+# `statuspage.io` — the remembered pattern would never have matched.
 
-rules: []
+rules:
+  # Observed: status.figma.com, status.twilio.com
+  - vendor: statuspage
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".stspg-customer.com"
+    confidence: high
+
+  # Observed: shop.polaroid.com -> shops.myshopify.com
+  - vendor: shopify
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".myshopify.com"
+    confidence: high
+
+  # Observed: help.figma.com, help.hotjar.com, help.typeform.com
+  - vendor: zendesk
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".zendesk.com"
+    confidence: high
+
+  # Observed: docs.intercom.com -> custom.intercom.help
+  - vendor: intercom
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".intercom.help"
+    confidence: high
+
+  - vendor: intercom
+    record_type: CNAME
+    match_kind: exact
+    pattern: "custom.intercom.help"
+    confidence: high
+
+  # Observed: status.openai.com, www.11ty.dev, help.amplitude.com
+  - vendor: vercel
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".vercel-dns.com"
+    confidence: high
+
+  # Observed: www.gatsbyjs.com -> netlify.netlifyglobalcdn.com
+  - vendor: netlify
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".netlifyglobalcdn.com"
+    confidence: high
+
+  - vendor: netlify
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".netlify.app"
+    confidence: high
+
+  # Observed: jobs.lever.co -> jobs.lever.co.cdn.cloudflare.net
+  - vendor: cloudflare
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".cdn.cloudflare.net"
+    confidence: high
+
+  # Observed: shop.tesla.com -> shop.tesla.com.edgekey.net
+  - vendor: akamai
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".edgekey.net"
+    confidence: high
+
+  - vendor: akamai
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".akamaiedge.net"
+    confidence: high
+
+  # Observed: boards.greenhouse.io -> boards.us.greenhouse.io
+  - vendor: greenhouse
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".greenhouse.io"
+    confidence: high
+
+  # Observed: go.crowdstrike.com -> crowdstrike.mktoweb.com
+  - vendor: marketo
+    record_type: CNAME
+    match_kind: suffix
+    pattern: ".mktoweb.com"
+    confidence: high

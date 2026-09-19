@@ -2,10 +2,20 @@
 # Value of an MX ParsedRecord is the exchange host without the priority.
 
 rules:
+  # The primary Workspace MX is `aspmx.l.google.com` exactly; the backups are
+  # `alt1.aspmx.l.google.com` and friends. Hence the exact/suffix pair — a
+  # bare suffix without the leading dot would also match a hostile
+  # `notaspmx.l.google.com`.
+  - vendor: google-workspace
+    record_type: MX
+    match_kind: exact
+    pattern: "aspmx.l.google.com"
+    confidence: high
+
   - vendor: google-workspace
     record_type: MX
     match_kind: suffix
-    pattern: "aspmx.l.google.com"
+    pattern: ".aspmx.l.google.com"
     confidence: high
 
   - vendor: google-workspace
@@ -30,4 +40,51 @@ rules:
     record_type: MX
     match_kind: suffix
     pattern: ".sendgrid.net"
+    confidence: high
+
+  # Observed: proofpoint.com -> mxa-00148501.gslb.pphosted.com
+  - vendor: proofpoint
+    record_type: MX
+    match_kind: suffix
+    pattern: ".pphosted.com"
+    confidence: high
+
+  # Observed: mimecast.com -> service-alpha-inbound-a.mimecast.com
+  - vendor: mimecast
+    record_type: MX
+    match_kind: suffix
+    pattern: ".mimecast.com"
+    confidence: high
+
+  # Observed: fastmail.com -> in1-smtp.messagingengine.com
+  - vendor: fastmail
+    record_type: MX
+    match_kind: suffix
+    pattern: ".messagingengine.com"
+    confidence: high
+
+  # Observed: protonmail.com -> mail.protonmail.ch
+  - vendor: protonmail
+    record_type: MX
+    match_kind: suffix
+    pattern: ".protonmail.ch"
+    confidence: high
+
+  - vendor: protonmail
+    record_type: MX
+    match_kind: suffix
+    pattern: ".proton.me"
+    confidence: high
+
+  # Observed: zoho.com -> smtpin.zoho.com
+  - vendor: zoho
+    record_type: MX
+    match_kind: suffix
+    pattern: ".zoho.com"
+    confidence: high
+
+  - vendor: zoho
+    record_type: MX
+    match_kind: suffix
+    pattern: ".zoho.eu"
     confidence: high

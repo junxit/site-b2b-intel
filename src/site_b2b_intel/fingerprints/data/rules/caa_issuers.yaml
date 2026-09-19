@@ -1,6 +1,79 @@
-# CAA issuer rules. The parser emits ParsedRecord(record_type='CAA',
-# value=<issuer domain>) for each `issue` directive in a CAA record.
-# Skipped at MVP — CA vendors (Let's Encrypt, DigiCert, etc.) aren't in the
-# seed catalog. Re-enable by adding vendor entries and rules here.
+# CAA issuer rules.
+#
+# The scanner parses each CAA `issue` / `issuewild` directive into a
+# CAA_ISSUER record whose value is the bare CA domain, with any CAA
+# parameters (`; cansignhttpexchanges=yes`) already stripped. `iodef` is a
+# reporting URI rather than a CA and never produces a CAA_ISSUER record.
+#
+# Every pattern below was read off a live CAA record rather than recalled.
+# Two would have been wrong from memory: Google Trust Services publishes as
+# `pki.goog` (not google.com) and Comodo as `comodoca.com`.
 
-rules: []
+rules:
+  - vendor: letsencrypt
+    record_type: CAA_ISSUER
+    match_kind: exact
+    pattern: "letsencrypt.org"
+    confidence: high
+
+  - vendor: digicert
+    record_type: CAA_ISSUER
+    match_kind: exact
+    pattern: "digicert.com"
+    confidence: high
+
+  - vendor: sectigo
+    record_type: CAA_ISSUER
+    match_kind: exact
+    pattern: "sectigo.com"
+    confidence: high
+
+  # Comodo CA became Sectigo in 2018; the legacy CAA domain is still widely
+  # published (observed on cloudflare.com).
+  - vendor: sectigo
+    record_type: CAA_ISSUER
+    match_kind: exact
+    pattern: "comodoca.com"
+    confidence: high
+
+  - vendor: globalsign
+    record_type: CAA_ISSUER
+    match_kind: exact
+    pattern: "globalsign.com"
+    confidence: high
+
+  - vendor: google-trust-services
+    record_type: CAA_ISSUER
+    match_kind: exact
+    pattern: "pki.goog"
+    confidence: high
+
+  - vendor: amazon-trust
+    record_type: CAA_ISSUER
+    match_kind: exact
+    pattern: "amazon.com"
+    confidence: high
+
+  - vendor: amazon-trust
+    record_type: CAA_ISSUER
+    match_kind: exact
+    pattern: "amazontrust.com"
+    confidence: high
+
+  - vendor: amazon-trust
+    record_type: CAA_ISSUER
+    match_kind: exact
+    pattern: "awstrust.com"
+    confidence: high
+
+  - vendor: amazon-trust
+    record_type: CAA_ISSUER
+    match_kind: exact
+    pattern: "amazonaws.com"
+    confidence: high
+
+  - vendor: ssl-com
+    record_type: CAA_ISSUER
+    match_kind: exact
+    pattern: "ssl.com"
+    confidence: high
