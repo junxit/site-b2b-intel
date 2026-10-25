@@ -1,3 +1,20 @@
+0.2.2 — dependency security upgrade
+- This scanner resolves DNS for arbitrary third-party domains, so the HTTP
+  and trust layers are the exposed ones. Every dependency with a published
+  advisory was upgraded, closing all 8 Dependabot alerts:
+  - urllib3 2.7.0 -> 2.8.0: GHSA-8988-9cw3-xx77 (HTTPS proxy TLS
+    configuration ignored or overridden) and GHSA-vxq7-64xx-v4gw (an
+    unbounded chunk-size line buffered into memory)
+  - certifi 2026.5.20 -> 2026.10.23 (GHSA-6q48-6c7w-9gw2): the bundled
+    emSign roots had compromised intermediate CA keys
+  - filelock 3.29.0 -> 4.2.4 (GHSA-v4x8-3wr5-3wq8): a planted symlink or
+    journal file could redirect the ReadWriteLock database
+  - pydantic-settings 2.14.1 -> 2.16.1 (GHSA-4xgf-cpjx-pc3j)
+- pydantic-settings>=2.14.2 states the patched floor in pyproject.toml; the
+  rest are transitive and held by uv.lock
+- No behavior change: 154 tests pass, `rules validate` is clean, and the
+  wheel and sdist build
+
 0.2.1 — fix silent zero-detection scans on an unseeded database
 - scan/report/vendors/rules now seed the catalog automatically if the
   database has never been initialized. Previously open_db would create a
